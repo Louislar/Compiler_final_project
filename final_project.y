@@ -2,42 +2,48 @@
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
+#include <map>
+#include "variablehead.h"
 using namespace std;
 int yylex();
 void yyerror(const char *message);
 int errorFlag=0;
-void checkMatrixMul(int a1, int a2, int a3, int a4, int columnNum)
-{
-	/*printf("CheckMatrixMul is working\n");*/
-	if(a2!=a3){
-		printf("Semantic error on col %d\n", columnNum);
-		errorFlag=1;
-	}
-}
-void checkMatrixAdd(int a1, int a2, int a3, int a4, int columnNum)
-{
-	if(a1!=a3||a2!=a4){
-		printf("Semantic error on col %d\n", columnNum);
-		errorFlag=1;
-	}
-}
+std::map<std::string, variable> abcdef;
+
 %}
-%union {
-int ival;
-struct 
-{
-	int a;
-	int b;
-}exval;
-class abc
-{
-	public:
-	int aaa;
-};
-}/*優先度越高的擺下面*/
-%token <ival> INUMBER number id boolval andop define ifop lambda mod notop orop
+
+%code requires {
+	#include <stdio.h>
+	#include <string.h>
+	#include <iostream>
+	#include <map>
+	#include "variablehead.h"
+	
+	
+	struct Type {
+        int ival;
+		struct 
+		{
+			int a;
+			int b;
+		}exval;
+        variable var;
+    };
+    
+    #define YYSTYPE Type  // for cpp and c (bison itself) compatibility
+}
+
+/* This section defines the additional function using the data type in
+ * `%code requires` section.
+*/
+%code provides {
+	void checkMatrixMul(int a1, int a2, int a3, int a4, int columnNum);
+}
+
+/*優先度越高的擺下面*/
+%token <var> INUMBER number id boolval andop define ifop lambda mod notop orop
 printnum printbool
-%type <ival> PROGRAM STMT PRINT-STMT EXP NUM-OP PLUS MINUS MULTIPLY DIVIDE
+%type <var> PROGRAM STMT PRINT-STMT EXP NUM-OP PLUS MINUS MULTIPLY DIVIDE
 MODULUS GREATER SMALLER EQUAL LOGICAL-OP AND-OP OR-OP NOT-OP DEF-STMT VARIABLE
 FUNEXP FUNIDs FUNBODY FUNCALL PARAM LASTEXP FUNNAME IFEXP TESTEXP THENEXP
 ELSE-EXP
@@ -56,8 +62,18 @@ STMT : EXP
      | PRINT-STMT
      ;
 /*2. Print*/
-PRINT-STMT : '(' printnum EXP ')'     {cout<<$2;}
-           | '(' printbool EXP ')'    {cout<<$2;}
+PRINT-STMT : '(' printnum EXP ')'     {cout<<$2<<"\n";}
+           | '(' printbool EXP ')'    {
+										if($3.Datatype!=1)
+											return 0;
+										if($3==1)
+											std::cout<<"#t\n";
+										else if($3==0)
+											std::cout<<"#f\n";
+										else {
+											cout<<"Invalid format\n";
+										}
+									  }
            ;
 /*3. Exprssion*/
 EXP : boolval | number {cout<<"yacc number\n";} | VARIABLE | NUM-OP | LOGICAL-OP
@@ -84,7 +100,7 @@ GREATER : '(' '>' EXP EXP ')'      {cout<<"yacc finish GREATER\n";}
         ;
 SMALLER : '(' '<' EXP EXP ')'      {cout<<"yacc finish SMALLER\n";}
         ;
-EQUAL : '(' '=' EXP EXP '+' ')'    {cout<<"yacc finish EQUAL\n";}
+EQUAL : '(' '=' EXP moreEXP ')'    {cout<<"yacc finish EQUAL\n";}
       ;
 /*5. Logical operation*/
 LOGICAL-OP : AND-OP | OR-OP | NOT-OP
@@ -128,12 +144,12 @@ FUNNAME : id                            {cout<<"yacc finish FUN-NAME\n";}
 /*8. if Expression*/
 IFEXP : '(' ifop TESTEXP THENEXP ELSEEXP ')' {cout<<"yacc finish IF-EXP\n";}
        ;
-TESTEXP : EXP
-         ;
-THENEXP : EXP
-         ;
-ELSEEXP : EXP
-         ;
+TESTEXP : EXP                                {cout<<"yacc finish TEST-EXP\n";}
+        ;
+THENEXP : EXP                                {cout<<"yacc finish THEN-EXP\n";} 
+        ;
+ELSEEXP : EXP                                {cout<<"yacc finish ELSE-EXP\n";}
+        ;
 
 %%
 void yyerror (const char *message)
@@ -144,7 +160,14 @@ void yyerror (const char *message)
 int main(int argc, char *argv[]) {
 	    
         yyparse();
-		if(errorFlag!=1)
-		    cout<<"Accepted\n";
         return(0);
+}
+
+void checkMatrixMul(int a1, int a2, int a3, int a4, int columnNum)
+{
+	/*printf("CheckMatrixMul is working\n");*/
+	if(a2!=a3){
+		printf("Semantic error on col %d\n", columnNum);
+		errorFlag=1;
+	}
 }

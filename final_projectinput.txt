@@ -1,1 +1,2 @@
-(define foo (lambda () 0))
+(if (= 1 0) 1 2)
+(if #t 1 2) 

@@ -5,6 +5,11 @@ int column=0;
 
 
 %%/*yyleng是你傳入的token的長度*/
+"if" {
+	printf("Lex if\n");
+	return ifop;
+}
+
 "define" {
 	printf("Lex define\n");
 	return define;
@@ -43,14 +48,19 @@ int column=0;
 	return id;
 }
 
-"#"t|"#"f {
+"#t"|"#f" {
 	column=column+yyleng;
 	printf("Lex boolval\n");
+	yylval.var.Datatype=1;
+	if(yytext[1]=='t')
+		yylval.var.value=1;
+	else if(yytext[1]=='f')
+		yylval.var.value=0;
 	return boolval;
 }
 
 
-"("|")"|"+"|"-"|"*"|"/"|"<"|">" {
+"("|")"|"+"|"-"|"*"|"/"|"<"|">"|"=" {
 	column=column+yyleng;
 	printf("Lex %c\n", yytext[0]);
 	return yytext[0];

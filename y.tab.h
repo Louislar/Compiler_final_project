@@ -39,6 +39,29 @@
 #if YYDEBUG
 extern int yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 15 "final_project.y" /* yacc.c:1909  */
+
+	#include <stdio.h>
+	#include <string.h>
+	#include <iostream>
+	#include <map>
+	#include "variablehead.h"
+	
+	
+	struct Type {
+        int ival;
+		struct 
+		{
+			int a;
+			int b;
+		}exval;
+        variable var;
+    };
+    
+    #define YYSTYPE Type  // for cpp and c (bison itself) compatibility
+
+#line 65 "y.tab.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -62,35 +85,16 @@ extern int yydebug;
 #endif
 
 /* Value type.  */
-#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
-union YYSTYPE
-{
-#line 25 "final_project.y" /* yacc.c:1909  */
-
-int ival;
-struct 
-{
-	int a;
-	int b;
-}exval;
-class abc
-{
-	public:
-	int aaa;
-};
-
-#line 84 "y.tab.h" /* yacc.c:1909  */
-};
-
-typedef union YYSTYPE YYSTYPE;
-# define YYSTYPE_IS_TRIVIAL 1
-# define YYSTYPE_IS_DECLARED 1
-#endif
 
 
 extern YYSTYPE yylval;
 
 int yyparse (void);
+/* "%code provides" blocks.  */
+#line 39 "final_project.y" /* yacc.c:1909  */
+
+	void checkMatrixMul(int a1, int a2, int a3, int a4, int columnNum);
+
+#line 99 "y.tab.h" /* yacc.c:1909  */
 
 #endif /* !YY_YY_Y_TAB_H_INCLUDED  */
