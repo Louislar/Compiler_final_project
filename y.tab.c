@@ -1323,7 +1323,7 @@ yyreduce:
     {
         case 7:
 #line 65 "final_project.y" /* yacc.c:1646  */
-    {cout<<(yyvsp[-2].var)<<"\n";}
+    {cout<<(yyvsp[-1].var).value<<"\n";}
 #line 1328 "y.tab.c" /* yacc.c:1646  */
     break;
 
@@ -1332,9 +1332,9 @@ yyreduce:
     {
 										if((yyvsp[-1].var).Datatype!=1)
 											return 0;
-										if((yyvsp[-1].var)==1)
+										if((yyvsp[-1].var).value==1)
 											std::cout<<"#t\n";
-										else if((yyvsp[-1].var)==0)
+										else if((yyvsp[-1].var).value==0)
 											std::cout<<"#f\n";
 										else {
 											cout<<"Invalid format\n";

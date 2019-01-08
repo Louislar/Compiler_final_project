@@ -62,13 +62,13 @@ STMT : EXP
      | PRINT-STMT
      ;
 /*2. Print*/
-PRINT-STMT : '(' printnum EXP ')'     {cout<<$2<<"\n";}
+PRINT-STMT : '(' printnum EXP ')'     {cout<<$3.value<<"\n";}
            | '(' printbool EXP ')'    {
 										if($3.Datatype!=1)
 											return 0;
-										if($3==1)
+										if($3.value==1)
 											std::cout<<"#t\n";
-										else if($3==0)
+										else if($3.value==0)
 											std::cout<<"#f\n";
 										else {
 											cout<<"Invalid format\n";
