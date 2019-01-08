@@ -46,7 +46,7 @@ printnum printbool
 %type <var> PROGRAM STMT PRINT-STMT EXP NUM-OP PLUS MINUS MULTIPLY DIVIDE
 MODULUS GREATER SMALLER EQUAL LOGICAL-OP AND-OP OR-OP NOT-OP DEF-STMT VARIABLE
 FUNEXP FUNIDs FUNBODY FUNCALL PARAM LASTEXP FUNNAME IFEXP TESTEXP THENEXP
-ELSE-EXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd moreEXPOr
+ELSEEXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd moreEXPOr
 %left <exval> '+''-'
 %left <exval> '*''/'
 %right <exval> '^'
@@ -177,13 +177,15 @@ LASTEXP : EXP                           {cout<<"yacc finish LASTEXP\n";}
 FUNNAME : id                            {cout<<"yacc finish FUN-NAME\n";}
          ;
 /*8. if Expression*/
-IFEXP : '(' ifop TESTEXP THENEXP ELSEEXP ')' {cout<<"yacc finish IF-EXP\n";}
+IFEXP : '(' ifop TESTEXP THENEXP ELSEEXP ')' {if($3.value==1){$$.value=$4.value;} /*條件是true*/
+												else if($3.value==0){$$.value=$5.value;};
+												cout<<"yacc finish IF-EXP\n";}
        ;
-TESTEXP : EXP                                {cout<<"yacc finish TEST-EXP\n";}
+TESTEXP : EXP                                {$$.value=$1.value;$$.Datatype=$1.Datatype;cout<<"yacc finish TEST-EXP\n";}
         ;
-THENEXP : EXP                                {cout<<"yacc finish THEN-EXP\n";} 
+THENEXP : EXP                                {$$.value=$1.value;$$.Datatype=$1.Datatype;cout<<"yacc finish THEN-EXP\n";} 
         ;
-ELSEEXP : EXP                                {cout<<"yacc finish ELSE-EXP\n";}
+ELSEEXP : EXP                                {$$.value=$1.value;$$.Datatype=$1.Datatype;cout<<"yacc finish ELSE-EXP\n";}
         ;
 
 %%
