@@ -73,6 +73,7 @@ int column=0;
 		yylval.var.value=1;
 	else if(yytext[1]=='f')
 		yylval.var.value=0;
+	printf("Lex bool is %d\n", yylval.var.value);
 	return boolval;
 }
 

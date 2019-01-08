@@ -46,7 +46,7 @@ printnum printbool
 %type <var> PROGRAM STMT PRINT-STMT EXP NUM-OP PLUS MINUS MULTIPLY DIVIDE
 MODULUS GREATER SMALLER EQUAL LOGICAL-OP AND-OP OR-OP NOT-OP DEF-STMT VARIABLE
 FUNEXP FUNIDs FUNBODY FUNCALL PARAM LASTEXP FUNNAME IFEXP TESTEXP THENEXP
-ELSE-EXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd
+ELSE-EXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd moreEXPOr
 %left <exval> '+''-'
 %left <exval> '*''/'
 %right <exval> '^'
@@ -124,14 +124,27 @@ EQUAL : '(' '=' EXP moreEXPEqual ')'    {if($3.value==$4.value){$$.value=$3.valu
 /*5. Logical operation*/
 LOGICAL-OP : AND-OP | OR-OP | NOT-OP
            ;
-moreEXPAnd : EXP 
-			| EXP moreEXPAnd 
+moreEXPAnd : EXP {$$.value=$1.value;}
+			| EXP moreEXPAnd {if($1.value==1&&$2.value==1){$$.value=1;}
+								else{$$.value=0;};}
 			;
-AND-OP : '(' andop EXP moreEXPAnd ')'    {cout<<"yacc finish AND\n";}     
+AND-OP : '(' andop EXP moreEXPAnd ')'    {if($3.value==1&&$4.value==1){$$.value=1;}
+											else{$$.value=0;};
+											$$.Datatype=1;
+											cout<<"yacc finish AND\n";}     
        ;
-OR-OP : '(' orop EXP moreEXP ')'      {cout<<"yacc finish OR\n";}
+moreEXPOr : EXP {$$.value=$1.value;}
+			| EXP moreEXPOr {if($1.value==1||$2.value==1){$$.value=1;}
+								else{$$.value=0;};}
+			;
+OR-OP : '(' orop EXP moreEXPOr ')'      {if($3.value==1||$4.value==1){$$.value=1;}
+											else{$$.value=0;};
+											$$.Datatype=1;cout<<"yacc finish OR\n";}
       ;
-NOT-OP : '(' notop EXP ')'            {cout<<"yacc finish NOT\n";}
+NOT-OP : '(' notop EXP ')'            {if($3.value==1){$$.value=0;}
+										else if($3.value==0){$$.value=1;};
+										$$.Datatype=1;
+										cout<<"yacc finish NOT\n";}
        ;
 /*6. define Statment*/
 DEF-STMT : '(' define VARIABLE EXP ')' {cout<<"yacc finish defined stmt\n";}
