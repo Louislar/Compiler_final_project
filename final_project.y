@@ -148,7 +148,7 @@ NOT-OP : '(' notop EXP ')'            {if($3.value==1){$$.value=0;}
        ;
 /*6. define Statment*/
 DEF-STMT : '(' define VARIABLE EXP ')' {cout<<"yacc finish defined stmt\n";}
-         ;
+         ;/*用map<string, int>存所有變數的值*/
 VARIABLE : id
          ;
 /*7. Function*/
