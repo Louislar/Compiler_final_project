@@ -46,7 +46,7 @@ printnum printbool
 %type <var> PROGRAM STMT PRINT-STMT EXP NUM-OP PLUS MINUS MULTIPLY DIVIDE
 MODULUS GREATER SMALLER EQUAL LOGICAL-OP AND-OP OR-OP NOT-OP DEF-STMT VARIABLE
 FUNEXP FUNIDs FUNBODY FUNCALL PARAM LASTEXP FUNNAME IFEXP TESTEXP THENEXP
-ELSE-EXP
+ELSE-EXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd
 %left <exval> '+''-'
 %left <exval> '*''/'
 %right <exval> '^'
@@ -84,28 +84,50 @@ NUM-OP : PLUS | MINUS | MULTIPLY | DIVIDE | MODULUS | GREATER
        | SMALLER | EQUAL
 	   ;
 moreEXP : EXP
-        | EXP moreEXP
+		| EXP moreEXP
+		;
+moreEXPPlus : EXP {$$.value=$1.value;}
+        | EXP moreEXPPlus {$$.value=$1.value+$2.value;}
         ;
-PLUS : '('  '+'  EXP  moreEXP ')' {cout<<"yacc finish PLUS\n";}
+moreEXPMUL : EXP {$$.value=$1.value;}
+		| EXP moreEXPMUL {$$.value=$1.value*$2.value;}
+		;
+PLUS : '('  '+'  EXP  moreEXPPlus ')' {$$.value=$3.value+$4.value;cout<<"yacc finish PLUS\n";}
      ;
-MINUS : '(' '-' EXP EXP ')'       {cout<<"yacc finish MINUS\n";}
+MINUS : '(' '-' EXP EXP ')'       {$$.value=$3.value-$4.value;cout<<"yacc finish MINUS\n";}
       ;
-MULTIPLY : '(' '*' EXP moreEXP ')' {cout<<"yacc finish MULTIPLY\n";}
+MULTIPLY : '(' '*' EXP moreEXPMUL ')' {$$.value=$3.value*$4.value;cout<<"yacc finish MULTIPLY\n";}
          ;
-DIVIDE : '(' '/' EXP EXP ')'       {cout<<"yacc finish DIVIDE\n";}
+DIVIDE : '(' '/' EXP EXP ')'       {$$.value=$3.value/$4.value;cout<<"yacc finish DIVIDE\n";}
        ;
-MODULUS : '(' mod EXP EXP ')'      {cout<<"yacc finish MODULUS\n";}
+MODULUS : '(' mod EXP EXP ')'      {$$.value=$3.value%$4.value;cout<<"yacc finish MODULUS\n";}
         ;
-GREATER : '(' '>' EXP EXP ')'      {cout<<"yacc finish GREATER\n";}
+GREATER : '(' '>' EXP EXP ')'      {if($3.value>$4.value){$$.Datatype=1;$$.value=1;};
+									if($3.value<=$4.value){$$.Datatype=1;$$.value=0;};
+									cout<<"yacc finish GREATER\n";}
         ;
-SMALLER : '(' '<' EXP EXP ')'      {cout<<"yacc finish SMALLER\n";}
+SMALLER : '(' '<' EXP EXP ')'      {if($3.value<$4.value){$$.Datatype=1;$$.value=1;};
+									if($3.value>=$4.value){$$.Datatype=1;$$.value=0;};
+									cout<<"yacc finish SMALLER\n";}
         ;
-EQUAL : '(' '=' EXP moreEXP ')'    {cout<<"yacc finish EQUAL\n";}
+/*要很多個東西都等於才會回傳true*/
+moreEXPEqual : EXP {$$.value=$1.value;$$.isEqual=1;}
+			| EXP moreEXPEqual {if($1.value!=$2.value){$$.isEqual=0;};$$.value=$1.value;}
+			;
+EQUAL : '(' '=' EXP moreEXPEqual ')'    {if($3.value==$4.value){$$.value=$3.value;$$.isEqual=1;}
+										else {$$.isEqual=0;};
+										$$.Datatype=1;
+										$$.value=$$.isEqual;
+										cout<<"yacc finish EQUAL\n";}
       ;
+	  
 /*5. Logical operation*/
 LOGICAL-OP : AND-OP | OR-OP | NOT-OP
            ;
-AND-OP : '(' andop EXP moreEXP ')'    {cout<<"yacc finish AND\n";}     
+moreEXPAnd : EXP 
+			| EXP moreEXPAnd 
+			;
+AND-OP : '(' andop EXP moreEXPAnd ')'    {cout<<"yacc finish AND\n";}     
        ;
 OR-OP : '(' orop EXP moreEXP ')'      {cout<<"yacc finish OR\n";}
       ;
