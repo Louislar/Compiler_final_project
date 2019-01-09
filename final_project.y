@@ -58,19 +58,13 @@ PROGRAM : STMT 				{
 								/*將變數加入global variable清單*/
 								if($1.Datatype==4){globalVar[$1.Name]=$1;};
 							}
-        | STMT moreSTMT 	{
-								/*將變數加入global variable清單*/
-								if($1.Datatype==4){globalVar[$1.Name]=$1;};
-							}
+        | STMT { /*將變數加入global variable清單*/ if($1.Datatype==4){globalVar[$1.Name]=$1;};} moreSTMT
         ;
 moreSTMT: STMT 				{
 								/*將變數加入global variable清單*/
 								if($1.Datatype==4){globalVar[$1.Name]=$1;};
 							}			
-		| STMT moreSTMT  	{
-								/*將變數加入global variable清單*/
-								if($1.Datatype==4){globalVar[$1.Name]=$1;};
-							}
+		| STMT  { /*將變數加入global variable清單*/ if($1.Datatype==4){globalVar[$1.Name]=$1;};} moreSTMT
 		;
 STMT : EXP 
      | DEFSTMT 
@@ -87,7 +81,7 @@ PRINT-STMT : '(' printnum EXP ')'     {cout<<$3.value<<"\n";}
 											std::cout<<"#f\n";
 										else {
 											cout<<"Invalid format\n";
-										}
+										};
 									  }
            ;
 /*3. Exprssion*/
