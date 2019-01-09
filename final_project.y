@@ -13,6 +13,7 @@ int errorFlag=0;
 std::map<std::string, variable> globalVar;	/*包括變數以及函數的清單*/
 void mergeList(std::list<e>& list01, std::list<e>& list02);
 
+void mergeListInt(std::list<int>& list01, std::list<int>& list02);
 %}
 
 %code requires {
@@ -50,7 +51,7 @@ printnum printbool
 %type <var> PROGRAM STMT PRINT-STMT EXP NUM-OP PLUS MINUS MULTIPLY DIVIDE
 MODULUS GREATER SMALLER EQUAL LOGICAL-OP AND-OP OR-OP NOT-OP DEFSTMT VARIABLE
 FUNEXP FUNIDs FUNBODY FUNCALL PARAM LASTEXP FUNNAME IFEXP TESTEXP THENEXP moreIDs
-ELSEEXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd moreEXPOr 
+ELSEEXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd moreEXPOr morePRAM
 %left <exval> '+''-'
 %left <exval> '*''/'
 %right <exval> '^'
@@ -212,15 +213,19 @@ FUNIDs : '(' moreIDs ')'                 {$$.functionParams=$2.functionParams;co
        ;
 FUNBODY : EXP                           {mergeList($$.funList, $1.funList);cout<<"yacc finish FUN-BODY\n";}
         ;
-morePRAM : PARAM						{mergeList(, );}
-         | PARAM morePRAM				{}
+morePRAM : PARAM						{mergeListInt($$.funParamPassIn, $1.funParamPassIn);}
+         | PARAM morePRAM				{
+											mergeListInt($$.funParamPassIn, $1.funParamPassIn);
+											mergeListInt($$.funParamPassIn, $2.funParamPassIn);
+										}
 		 ;
+		 /*這裡就要把function的值算出來了*/
 FUNCALL : '(' FUNEXP morePRAM ')'      {cout<<"yacc finish FUN-CALL\n";}
         | '(' FUNEXP ')'               {cout<<"yacc finish FUN-CALL\n";}
         | '(' FUNNAME morePRAM ')'     {cout<<"yacc finish FUN-CALL\n";}
 		| '(' FUNNAME ')'              {cout<<"yacc finish FUN-CALL\n";}
         ;
-PARAM : EXP                             {cout<<"yacc finish PARAM\n";}
+PARAM : EXP                             {$$.funParamPassIn.push_back($1.value);cout<<"yacc finish PARAM\n";}
       ;
 LASTEXP : EXP                           {cout<<"yacc finish LASTEXP\n";}
          ;
@@ -253,6 +258,15 @@ int main(int argc, char *argv[]) {
 void mergeList(std::list<e>& list01, std::list<e>& list02)
 		{
 			for(std::list<e>::iterator it=list02.begin();it!=list02.end();it++)
+			{
+				list01.push_back(*it);
+			}
+		}
+		
+
+void mergeListInt(std::list<int>& list01, std::list<int>& list02)
+		{
+			for(std::list<int>::iterator it=list02.begin();it!=list02.end();it++)
 			{
 				list01.push_back(*it);
 			}
