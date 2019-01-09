@@ -3,12 +3,15 @@
 #include <string.h>
 #include <iostream>
 #include <map>
+#include <queue>
+#include <list>
 #include "variablehead.h"
 using namespace std;
 int yylex();
 void yyerror(const char *message);
 int errorFlag=0;
 std::map<std::string, variable> globalVar;	/*包括變數以及函數的清單*/
+void mergeList(std::list<e>& list01, std::list<e>& list02);
 
 %}
 
@@ -18,6 +21,7 @@ std::map<std::string, variable> globalVar;	/*包括變數以及函數的清單*/
 	#include <iostream>
 	#include <map>
 	#include "variablehead.h"
+	#include <list>
 	
 	
 	struct Type {
@@ -45,8 +49,8 @@ std::map<std::string, variable> globalVar;	/*包括變數以及函數的清單*/
 printnum printbool
 %type <var> PROGRAM STMT PRINT-STMT EXP NUM-OP PLUS MINUS MULTIPLY DIVIDE
 MODULUS GREATER SMALLER EQUAL LOGICAL-OP AND-OP OR-OP NOT-OP DEFSTMT VARIABLE
-FUNEXP FUNIDs FUNBODY FUNCALL PARAM LASTEXP FUNNAME IFEXP TESTEXP THENEXP
-ELSEEXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd moreEXPOr
+FUNEXP FUNIDs FUNBODY FUNCALL PARAM LASTEXP FUNNAME IFEXP TESTEXP THENEXP moreIDs
+ELSEEXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd moreEXPOr 
 %left <exval> '+''-'
 %left <exval> '*''/'
 %right <exval> '^'
@@ -85,14 +89,21 @@ PRINT-STMT : '(' printnum EXP ')'     {cout<<$3.value<<"\n";}
 									  }
            ;
 /*3. Exprssion*/
-EXP : boolval | number {cout<<"yacc number\n";} | VARIABLE {/*從global variable搜尋*/
-															std::map<std::string, variable>::iterator it;
-															it=globalVar.find($1.Name);
-															if(it!=globalVar.end()) {
-																$$=it->second;
-															}
-															else {cout<<globalVar.size()<<" \n";cout<<"Cant find "<<$1.Name<<"\n";return 0;};
-															}
+EXP : boolval | number {
+						$$.funList.push_back(e($1.value, "", 2));
+						cout<<"yacc number\n";
+						} 
+	| VARIABLE 			{/*從global variable搜尋*/
+							std::map<std::string, variable>::iterator it;
+							it=globalVar.find($1.Name);
+							if(it!=globalVar.end()) {
+								$$=it->second;
+							}
+							else {
+								$$.funList.push_back(e(0, $1.Name, 3));
+								cout<<"Cant find "<<$1.Name<<"\n";
+								};
+						}
 	| NUM-OP | LOGICAL-OP
     | FUNEXP | FUNCALL | IFEXP
     ;
@@ -103,13 +114,24 @@ NUM-OP : PLUS | MINUS | MULTIPLY | DIVIDE | MODULUS | GREATER
 moreEXP : EXP
 		| EXP moreEXP
 		;
-moreEXPPlus : EXP {$$.value=$1.value;}
-        | EXP moreEXPPlus {$$.value=$1.value+$2.value;}
+moreEXPPlus : EXP {$$.value=$1.value;mergeList($$.funList, $1.funList);}
+        | EXP moreEXPPlus {
+							$$.value=$1.value+$2.value;
+							$$.funList.push_back(e(0, "+", 1));
+							mergeList($$.funList, $1.funList);
+							mergeList($$.funList, $2.funList);
+							}
         ;
 moreEXPMUL : EXP {$$.value=$1.value;}
 		| EXP moreEXPMUL {$$.value=$1.value*$2.value;}
 		;
-PLUS : '('  '+'  EXP  moreEXPPlus ')' {$$.value=$3.value+$4.value;cout<<"yacc finish PLUS\n";}
+PLUS : '('  '+'  EXP  moreEXPPlus ')' {
+										$$.value=$3.value+$4.value;
+										$$.funList.push_back(e(0, "+", 1));
+										mergeList($$.funList, $3.funList);
+										mergeList($$.funList, $4.funList);
+										cout<<"yacc finish PLUS\n";
+										}
      ;
 MINUS : '(' '-' EXP EXP ')'       {$$.value=$3.value-$4.value;cout<<"yacc finish MINUS\n";}
       ;
@@ -168,25 +190,30 @@ DEFSTMT : '(' define VARIABLE EXP ')' { /*還沒考慮function的define要怎麼
 										$$.Datatype=4;
 										$$.Name=$3.Name;
 										$$.value=$4.value;
-										/*globalVar[$$.Name]=$$;*//*可以正常運作, 是一道上面就不行了*/
 										cout<<"yacc finish defined stmt\n";
 										}
          ;/*用map<string, int>存所有變數的值*/
 VARIABLE : id {$$.Name=$1.Name;}
          ;
 /*7. Function*/
-FUNEXP : '(' lambda FUNIDs FUNBODY ')'  {cout<<"yacc finish FUN-EXP\n";}
+FUNEXP : '(' lambda FUNIDs FUNBODY ')'  {$$.Datatype=3;cout<<"yacc finish FUN-EXP\n";}
        ;
-moreIDs: id
-       | id moreIDs
+moreIDs: id								{$$.functionParams[$1.Name]=0;}
+       | id  moreIDs 					{
+											$$.functionParams[$1.Name]=0;
+											for(std::map<string, int>::iterator it=$2.functionParams.begin()
+												;it!=$2.functionParams.end();it++){
+													$$.functionParams[it->first]=it->second;
+												};
+										}
        ;
-FUNIDs : '(' moreIDs ')'                 {cout<<"yacc finish FUN-IDs\n";}
+FUNIDs : '(' moreIDs ')'                 {$$.functionParams=$2.functionParams;cout<<"yacc finish FUN-IDs\n";}
        | '(' ')'
        ;
-FUNBODY : EXP                           {cout<<"yacc finish FUN-BODY\n";}
+FUNBODY : EXP                           {mergeList($$.funList, $1.funList);cout<<"yacc finish FUN-BODY\n";}
         ;
-morePRAM : PARAM
-         | PARAM morePRAM
+morePRAM : PARAM						{mergeList(, );}
+         | PARAM morePRAM				{}
 		 ;
 FUNCALL : '(' FUNEXP morePRAM ')'      {cout<<"yacc finish FUN-CALL\n";}
         | '(' FUNEXP ')'               {cout<<"yacc finish FUN-CALL\n";}
@@ -222,6 +249,14 @@ int main(int argc, char *argv[]) {
         yyparse();
         return(0);
 }
+
+void mergeList(std::list<e>& list01, std::list<e>& list02)
+		{
+			for(std::list<e>::iterator it=list02.begin();it!=list02.end();it++)
+			{
+				list01.push_back(*it);
+			}
+		}
 
 void checkMatrixMul(int a1, int a2, int a3, int a4, int columnNum)
 {

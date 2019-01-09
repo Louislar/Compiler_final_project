@@ -89,5 +89,5 @@ int column=0;
 \n                 {printf("Lex linefeed\n");/*Not EOF*/}
 [\t]+              {/* Do nothing */}
 [ ]+			   {printf("Lex blank\n");/*遇到空格, 也要加一個column, 因為空格也算一行*/column=column+yyleng;}
-.                  {printf("Lex .\n");/*printf("current line: %d\n", column);printf("Got %c\n", yytext[0]);*/return(yytext[0]);}
+.                  {printf("Lex . %c\n", yytext[0]);/*printf("current line: %d\n", column);printf("Got %c\n", yytext[0]);*/return(yytext[0]);}
 %%
