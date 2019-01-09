@@ -8,7 +8,7 @@ using namespace std;
 int yylex();
 void yyerror(const char *message);
 int errorFlag=0;
-std::map<std::string, variable> abcdef;
+std::map<std::string, variable> globalVar;	/*包括變數以及函數的清單*/
 
 %}
 
@@ -44,7 +44,7 @@ std::map<std::string, variable> abcdef;
 %token <var> INUMBER number id boolval andop define ifop lambda mod notop orop
 printnum printbool
 %type <var> PROGRAM STMT PRINT-STMT EXP NUM-OP PLUS MINUS MULTIPLY DIVIDE
-MODULUS GREATER SMALLER EQUAL LOGICAL-OP AND-OP OR-OP NOT-OP DEF-STMT VARIABLE
+MODULUS GREATER SMALLER EQUAL LOGICAL-OP AND-OP OR-OP NOT-OP DEFSTMT VARIABLE
 FUNEXP FUNIDs FUNBODY FUNCALL PARAM LASTEXP FUNNAME IFEXP TESTEXP THENEXP
 ELSEEXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd moreEXPOr
 %left <exval> '+''-'
@@ -54,11 +54,26 @@ ELSEEXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd moreEXPOr
 %%
 /*1. program*/
 /*一個以上的STMT*/
-PROGRAM : STMT
-        | STMT PROGRAM
+PROGRAM : STMT 				{
+								/*將變數加入global variable清單*/
+								if($1.Datatype==4){globalVar[$1.Name]=$1;};
+							}
+        | STMT moreSTMT 	{
+								/*將變數加入global variable清單*/
+								if($1.Datatype==4){globalVar[$1.Name]=$1;};
+							}
         ;
+moreSTMT: STMT 				{
+								/*將變數加入global variable清單*/
+								if($1.Datatype==4){globalVar[$1.Name]=$1;};
+							}			
+		| STMT moreSTMT  	{
+								/*將變數加入global variable清單*/
+								if($1.Datatype==4){globalVar[$1.Name]=$1;};
+							}
+		;
 STMT : EXP 
-     | DEF-STMT 
+     | DEFSTMT 
      | PRINT-STMT
      ;
 /*2. Print*/
@@ -76,7 +91,10 @@ PRINT-STMT : '(' printnum EXP ')'     {cout<<$3.value<<"\n";}
 									  }
            ;
 /*3. Exprssion*/
-EXP : boolval | number {cout<<"yacc number\n";} | VARIABLE | NUM-OP | LOGICAL-OP
+EXP : boolval | number {cout<<"yacc number\n";} | VARIABLE {/*從global variable搜尋*/
+															
+															}
+	| NUM-OP | LOGICAL-OP
     | FUNEXP | FUNCALL | IFEXP
     ;
 /*4. Numerical operation*/
@@ -147,9 +165,15 @@ NOT-OP : '(' notop EXP ')'            {if($3.value==1){$$.value=0;}
 										cout<<"yacc finish NOT\n";}
        ;
 /*6. define Statment*/
-DEF-STMT : '(' define VARIABLE EXP ')' {cout<<"yacc finish defined stmt\n";}
+DEFSTMT : '(' define VARIABLE EXP ')' { /*還沒考慮function的define要怎麼做*/
+										$$.Datatype=4;
+										$$.Name=$3.Name;
+										$$.value=$4.value;
+										$$.Datatype=$4.Datatype;
+										cout<<"yacc finish defined stmt\n";
+										}
          ;/*用map<string, int>存所有變數的值*/
-VARIABLE : id
+VARIABLE : id {$$.Name=$1.Name;}
          ;
 /*7. Function*/
 FUNEXP : '(' lambda FUNIDs FUNBODY ')'  {cout<<"yacc finish FUN-EXP\n";}
