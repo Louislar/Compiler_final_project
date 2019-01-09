@@ -92,7 +92,12 @@ PRINT-STMT : '(' printnum EXP ')'     {cout<<$3.value<<"\n";}
            ;
 /*3. Exprssion*/
 EXP : boolval | number {cout<<"yacc number\n";} | VARIABLE {/*從global variable搜尋*/
-															
+															std::map<std::string, variable>::iterator it;
+															it=globalVar.find($1.Name);
+															if(it!=globalVar.end()) {
+																$$=it->second;
+															}
+															else {cout<<globalVar.size()<<" \n";cout<<"Cant find "<<$1.Name<<"\n";return 0;};
 															}
 	| NUM-OP | LOGICAL-OP
     | FUNEXP | FUNCALL | IFEXP
@@ -169,7 +174,7 @@ DEFSTMT : '(' define VARIABLE EXP ')' { /*還沒考慮function的define要怎麼
 										$$.Datatype=4;
 										$$.Name=$3.Name;
 										$$.value=$4.value;
-										$$.Datatype=$4.Datatype;
+										/*globalVar[$$.Name]=$$;*//*可以正常運作, 是一道上面就不行了*/
 										cout<<"yacc finish defined stmt\n";
 										}
          ;/*用map<string, int>存所有變數的值*/
