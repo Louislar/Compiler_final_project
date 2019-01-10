@@ -83,8 +83,8 @@ STMT : EXP
 /*2. Print*/
 PRINT-STMT : '(' printnum EXP ')'     {cout<<$3.value<<"\n";}
            | '(' printbool EXP ')'    {
-										if($3.Datatype!=1)
-											return 0;
+										/*if($3.Datatype!=1)
+											return 0;*/
 										if($3.value==1)
 											std::cout<<"#t\n";
 										else if($3.value==0)
@@ -139,7 +139,7 @@ moreEXPMUL : EXP {$$.value=$1.value;$$.funList.clear();$$.funList=mergeList($$.f
 							$$.funList.push_back(e(0, "*", 1));
 							$$.funList=mergeList($$.funList, $1.funList);
 							$$.funList=mergeList($$.funList, $2.funList);
-							cout<<"PLUS has more than two parameter\n";
+							cout<<"MUL has more than two parameter\n";
 							}
 		;
 PLUS : '('  '+'  EXP  moreEXPPlus ')' {
@@ -152,7 +152,15 @@ PLUS : '('  '+'  EXP  moreEXPPlus ')' {
 										cout<<"yacc finish PLUS len: "<<$$.funList.size()<<"\n";
 										}
      ;
-MINUS : '(' '-' EXP EXP ')'       {$$.value=$3.value-$4.value;cout<<"yacc finish MINUS\n";}
+MINUS : '(' '-' EXP EXP ')'       {
+									$$.value=$3.value-$4.value;
+									
+									$$.funList.clear();
+									$$.funList.push_back(e(0, "-", 1));
+									$$.funList=mergeList($$.funList, $3.funList);
+									$$.funList=mergeList($$.funList, $4.funList);
+									cout<<"yacc finish MINUS len: "<<$$.funList.size()<<"\n";
+									}
       ;
 MULTIPLY : '(' '*' EXP moreEXPMUL ')' {
 										$$.value=$3.value*$4.value;
@@ -164,27 +172,69 @@ MULTIPLY : '(' '*' EXP moreEXPMUL ')' {
 										cout<<"yacc finish MULTIPLY len: "<<$$.funList.size()<<"\n";
 										}
          ;
-DIVIDE : '(' '/' EXP EXP ')'       {$$.value=$3.value/$4.value;cout<<"yacc finish DIVIDE\n";}
+DIVIDE : '(' '/' EXP EXP ')'       {
+									$$.value=$3.value/$4.value;
+									
+									$$.funList.clear();
+									$$.funList.push_back(e(0, "/", 1));
+									$$.funList=mergeList($$.funList, $3.funList);
+									$$.funList=mergeList($$.funList, $4.funList);
+									cout<<"yacc finish DIVIDE\n";
+									}
        ;
-MODULUS : '(' mod EXP EXP ')'      {$$.value=$3.value%$4.value;cout<<"yacc finish MODULUS\n";}
+MODULUS : '(' mod EXP EXP ')'      {
+									$$.value=$3.value%$4.value;
+									
+									$$.funList.clear();
+									$$.funList.push_back(e(0, "mod", 1));
+									$$.funList=mergeList($$.funList, $3.funList);
+									$$.funList=mergeList($$.funList, $4.funList);
+									cout<<"yacc finish MODULUS\n";
+									}
         ;
 GREATER : '(' '>' EXP EXP ')'      {if($3.value>$4.value){$$.Datatype=1;$$.value=1;};
 									if($3.value<=$4.value){$$.Datatype=1;$$.value=0;};
+									
+									$$.funList.clear();
+									$$.funList.push_back(e(0, ">", 1));
+									$$.funList=mergeList($$.funList, $3.funList);
+									$$.funList=mergeList($$.funList, $4.funList);
 									cout<<"yacc finish GREATER\n";}
         ;
 SMALLER : '(' '<' EXP EXP ')'      {if($3.value<$4.value){$$.Datatype=1;$$.value=1;};
 									if($3.value>=$4.value){$$.Datatype=1;$$.value=0;};
+									
+									$$.funList.clear();
+									$$.funList.push_back(e(0, "<", 1));
+									$$.funList=mergeList($$.funList, $3.funList);
+									$$.funList=mergeList($$.funList, $4.funList);
 									cout<<"yacc finish SMALLER\n";}
         ;
 /*要很多個東西都等於才會回傳true*/
-moreEXPEqual : EXP {$$.value=$1.value;$$.isEqual=1;}
-			| EXP moreEXPEqual {if($1.value!=$2.value){$$.isEqual=0;};$$.value=$1.value;}
+moreEXPEqual : EXP {$$.value=$1.value;$$.isEqual=1;$$.funList.clear();$$.funList=mergeList($$.funList, $1.funList);cout<<"moreEXPEqual len: "<<$$.funList.size()<<"\n";}
+			| EXP moreEXPEqual {
+								if($1.value!=$2.value){$$.isEqual=0;};
+								$$.value=$1.value;
+								
+								$$.funList.clear();
+								$$.funList.push_back(e(0, "=", 1));
+								$$.funList=mergeList($$.funList, $1.funList);
+								$$.funList=mergeList($$.funList, $2.funList);
+								cout<<"EQUAL has more than two parameter\n";
+								}
 			;
-EQUAL : '(' '=' EXP moreEXPEqual ')'    {if($3.value==$4.value){$$.value=$3.value;$$.isEqual=1;}
-										else {$$.isEqual=0;};
-										$$.Datatype=1;
-										$$.value=$$.isEqual;
-										cout<<"yacc finish EQUAL\n";}
+EQUAL : '(' '=' EXP moreEXPEqual ')'    {
+											if($3.value==$4.value){$$.value=$3.value;$$.isEqual=1;}
+											else {$$.isEqual=0;};
+											$$.Datatype=1;
+											$$.value=$$.isEqual;
+											
+											$$.funList.clear();
+											$$.funList.push_back(e(0, "=", 1));
+											$$.funList=mergeList($$.funList, $3.funList);
+											$$.funList=mergeList($$.funList, $4.funList);
+											cout<<"yacc finish EQUAL\n";
+										}
       ;
 	  
 /*5. Logical operation*/
@@ -441,7 +491,7 @@ int calTheExp(std::list<e>& funlist, std::map<std::string, int>& functionparams)
 					a=0;
 				tempStack.push(a);
 			}
-			else if(tempElement.name=="=")
+			else if(tempElement.name=="=")	/*"="的部分還要修正, function內部*/
 			{
 				int a=tempStack.top();
 				tempStack.pop();
