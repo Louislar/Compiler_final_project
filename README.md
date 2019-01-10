@@ -14,6 +14,7 @@ compler的期末project, 實作minilisp的interpreter
 6. Variable Definition Able to define a variable 8
 7. Function Able to declare and call an anonymous function 8
 8. Named Function Able to declare and call a named function 6
+
 |   Name   |:--------:| Symbol |   Example   | Example Output |
 |:--------:|:--------:|:------:|:-----------:|:--------------:|
 |   Plus   |:--------:|   `+`  |  `(+ 1 2)`  |       `3`      |
@@ -24,6 +25,17 @@ compler的期末project, 實作minilisp的interpreter
 |  Greater |:--------:|   `>`  |  `(> 1 2)`  |      `#f`      |
 |  Smaller |:--------:|   `<`  |  `(< 1 2)`  |      `#t`      |
 |   Equal  |:--------:|   `=`  |  `(= 1 2)`  |      `#f`      |
+
+|   Name   | Symbol |   Example   | Example Output |
+|:--------:|:------:|:-----------:|:--------------:|
+|   Plus   |   `+`  |  `(+ 1 2)`  |       `3`      |
+|   Minus  |   `-`  |  `(- 1 2)`  |      `-1`      |
+| Multiply |   `*`  |  `(* 2 3)`  |       `6`      |
+|  Divide  |   `/`  |  `(/ 10 3)` |       `3`      |
+|  Modulus |  `mod` | `(mod 8 3)` |       `2`      |
+|  Greater |   `>`  |  `(> 1 2)`  |      `#f`      |
+|  Smaller |   `<`  |  `(< 1 2)`  |      `#t`      |
+|   Equal  |   `=`  |  `(= 1 2)`  |      `#f`      |
 
 ## make file 用法
 ./compile_make xx.l xx.y yy
