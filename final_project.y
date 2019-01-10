@@ -66,15 +66,15 @@ ELSEEXP moreEXPPlus moreEXPMUL moreEXPEqual moreEXPAnd moreEXPOr morePRAM
 /*一個以上的STMT*/
 PROGRAM : STMT 				{
 								/*將變數加入global variable清單*/
-								if($1.Datatype==4){globalVar[$1.Name]=$1;};
+								/*if($1.Datatype==4){globalVar[$1.Name]=$1;};*/
 							}
-        | STMT { /*將變數加入global variable清單*/ if($1.Datatype==4){globalVar[$1.Name]=$1;};} moreSTMT
+        | STMT { /*將變數加入global variable清單*/ /*if($1.Datatype==4){globalVar[$1.Name]=$1;};*/} moreSTMT
         ;
 moreSTMT: STMT 				{
 								/*將變數加入global variable清單*/
-								if($1.Datatype==4){globalVar[$1.Name]=$1;};
+								/*if($1.Datatype==4){globalVar[$1.Name]=$1;};*/
 							}			
-		| STMT  { /*將變數加入global variable清單*/ if($1.Datatype==4){globalVar[$1.Name]=$1;};} moreSTMT
+		| STMT  { /*將變數加入global variable清單*/ /*if($1.Datatype==4){globalVar[$1.Name]=$1;};*/} moreSTMT
 		;
 STMT : EXP 
      | DEFSTMT 
@@ -263,10 +263,17 @@ NOT-OP : '(' notop EXP ')'            {if($3.value==1){$$.value=0;}
 										cout<<"yacc finish NOT\n";}
        ;
 /*6. define Statment*/
-DEFSTMT : '(' define VARIABLE EXP ')' { /*還沒考慮function的define要怎麼做*/
+DEFSTMT : '(' define VARIABLE EXP ')' { 
 										$$.Datatype=4;
 										$$.Name=$3.Name;
 										$$.value=$4.value;
+										
+										/*傳入的是function變數*/
+										$$.funList=$4.funList;
+										$$.functionParams=$4.functionParams;
+										if($4.Datatype==3){$$.Datatype=3;};
+										/*加到全域變數清單*/
+										globalVar[$$.Name]=$$;
 										cout<<"yacc finish defined stmt\n";
 										}
          ;/*用map<string, int>存所有變數的值*/
@@ -332,14 +339,35 @@ FUNCALL : '(' FUNEXP morePRAM ')'      {
 										$$.value=calTheExp($2.funList, $2.functionParams);
 										cout<<"yacc finish FUN-CALL\n";
 										}
-        | '(' FUNNAME morePRAM ')'     {cout<<"yacc finish FUN-CALL\n";}
+        | '(' FUNNAME morePRAM ')'     {
+										/*從變數清單找到function*/
+										std::map<std::string, variable>::iterator it;
+										it=globalVar.find($2.Name);
+										if(it!=globalVar.end()) {
+											/*先把參數送進來*/
+											paramMerge((it->second).functionParams, $3.funParamPassIn);
+											cout<<"FunList len: "<<(it->second).funList.size()<<"\n";
+											cout<<"FunParams len: "<<(it->second).functionParams.size()<<"\n";
+											for(std::map<std::string, int>::iterator it1=(it->second).functionParams.begin();it1!=(it->second).functionParams.end();it1++){cout<<it1->first<<" ";};
+											cout<<endl;
+											for(std::map<std::string, int>::iterator it1=(it->second).functionParams.begin();it1!=(it->second).functionParams.end();it1++){cout<<it1->second<<" ";};
+											cout<<endl;
+											$$.value=calTheExp((it->second).funList, (it->second).functionParams);
+										}
+										else{
+											$$.value=0;
+											cout<<"Cant find the function"<<endl;
+										}
+										
+										cout<<"yacc finish FUN-CALL\n";
+										}
 		| '(' FUNNAME ')'              {cout<<"yacc finish FUN-CALL\n";}
         ;
 PARAM : EXP                             {$$.funParamPassIn.clear();$$.funParamPassIn.push_back($1.value);cout<<"yacc finish PARAM, value: "<<$1.value<<"\n";}
       ;
 LASTEXP : EXP                           {cout<<"yacc finish LASTEXP\n";}
          ;
-FUNNAME : id                            {cout<<"yacc finish FUN-NAME\n";}
+FUNNAME : id                            {$$.Name=$1.Name;cout<<"yacc finish FUN-NAME\n";}
          ;
 /*8. if Expression*/
 IFEXP : '(' ifop TESTEXP THENEXP ELSEEXP ')' {if($3.value==1){$$.value=$4.value;} /*條件是true*/
@@ -518,8 +546,11 @@ int calTheExp(std::list<e>& funlist, std::map<std::string, int>& functionparams)
 			{
 				if((it->first)==tempElement.name){
 					paramVal=it->second;
+					
 				}
 			}
+			
+			
 			tempStack.push(paramVal);
 		}
 	}

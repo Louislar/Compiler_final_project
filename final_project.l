@@ -59,7 +59,7 @@ int column=0;
 	return number;
 }
 
-[a-z]([a-z]|[0-9]|'-')* {
+[a-z]([a-z]|[0-9]|"-")* {
 	column=column+yyleng;
 	printf("Lex ID: %s\n", yytext);
 	yylval.var.Name=yytext;
