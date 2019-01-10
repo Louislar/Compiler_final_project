@@ -1,7 +1,7 @@
 # Compiler_final_project
 
 
-compler的期末project, 實作minilisp的interpreter(smli)
+compler的期末project, 實作minilisp的interpreter
 
 ## 完成進度
 只做完 basic features 1~8
