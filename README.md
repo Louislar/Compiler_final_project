@@ -5,6 +5,13 @@ compler的期末project, 實作minilisp的interpreter
 
 測資位於test_data的資料夾裡面
 
+## 編譯環境 
+lex & yacc
+使用上課提供的lubuntu進行編譯:
+https://goo.gl/nNqsKD
+以下網址教學是如何從你們的作業系統傳檔案到VM上:
+https://goo.gl/62cNRw
+
 ## 完成進度
 只做完 basic features 1~8
 
