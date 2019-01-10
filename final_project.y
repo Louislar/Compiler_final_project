@@ -11,9 +11,14 @@ int yylex();
 void yyerror(const char *message);
 int errorFlag=0;
 std::map<std::string, variable> globalVar;	/*包括變數以及函數的清單*/
-void mergeList(std::list<e>& list01, std::list<e>& list02);
+std::list<e> mergeList(std::list<e> list01, std::list<e> list02);
 
 void mergeListInt(std::list<int>& list01, std::list<int>& list02);
+
+/*將call function傳入的參數, 依序放入function expression的參數dictionary裡面*/
+void paramMerge(std::map<string, int>& a, std::list<int>& b);
+/*把function的式子實際做運算，包含把參數帶進去*/
+int calTheExp(std::list<e>& funList, std::map<std::string, int>& functionParams);
 %}
 
 %code requires {
@@ -101,9 +106,10 @@ EXP : boolval | number {
 								$$=it->second;
 							}
 							else {
-								$$.funList.push_back(e(0, $1.Name, 3));
 								cout<<"Cant find "<<$1.Name<<"\n";
 								};
+							/*加入function的parameter*/
+							$$.funList.push_back(e(0, $1.Name, 3));
 						}
 	| NUM-OP | LOGICAL-OP
     | FUNEXP | FUNCALL | IFEXP
@@ -112,31 +118,51 @@ EXP : boolval | number {
 NUM-OP : PLUS | MINUS | MULTIPLY | DIVIDE | MODULUS | GREATER
        | SMALLER | EQUAL
 	   ;
-moreEXP : EXP
-		| EXP moreEXP
+moreEXP : EXP {}
+		| EXP moreEXP {}
 		;
-moreEXPPlus : EXP {$$.value=$1.value;mergeList($$.funList, $1.funList);}
+moreEXPPlus : EXP {$$.value=$1.value;$$.funList.clear();$$.funList=mergeList($$.funList, $1.funList);cout<<"moreEXPPlus len: "<<$$.funList.size()<<"\n";}
         | EXP moreEXPPlus {
 							$$.value=$1.value+$2.value;
+							$$.funList.clear();
 							$$.funList.push_back(e(0, "+", 1));
-							mergeList($$.funList, $1.funList);
-							mergeList($$.funList, $2.funList);
+							$$.funList=mergeList($$.funList, $1.funList);
+							$$.funList=mergeList($$.funList, $2.funList);
+							cout<<"PLUS has more than two parameter\n";
 							}
         ;
-moreEXPMUL : EXP {$$.value=$1.value;}
-		| EXP moreEXPMUL {$$.value=$1.value*$2.value;}
+moreEXPMUL : EXP {$$.value=$1.value;$$.funList.clear();$$.funList=mergeList($$.funList, $1.funList);cout<<"moreEXPMul len: "<<$$.funList.size()<<"\n";}
+		| EXP moreEXPMUL {
+							$$.value=$1.value*$2.value;
+							
+							$$.funList.clear();
+							$$.funList.push_back(e(0, "*", 1));
+							$$.funList=mergeList($$.funList, $1.funList);
+							$$.funList=mergeList($$.funList, $2.funList);
+							cout<<"PLUS has more than two parameter\n";
+							}
 		;
 PLUS : '('  '+'  EXP  moreEXPPlus ')' {
 										$$.value=$3.value+$4.value;
+										
+										$$.funList.clear();
 										$$.funList.push_back(e(0, "+", 1));
-										mergeList($$.funList, $3.funList);
-										mergeList($$.funList, $4.funList);
-										cout<<"yacc finish PLUS\n";
+										$$.funList=mergeList($$.funList, $3.funList);
+										$$.funList=mergeList($$.funList, $4.funList);
+										cout<<"yacc finish PLUS len: "<<$$.funList.size()<<"\n";
 										}
      ;
 MINUS : '(' '-' EXP EXP ')'       {$$.value=$3.value-$4.value;cout<<"yacc finish MINUS\n";}
       ;
-MULTIPLY : '(' '*' EXP moreEXPMUL ')' {$$.value=$3.value*$4.value;cout<<"yacc finish MULTIPLY\n";}
+MULTIPLY : '(' '*' EXP moreEXPMUL ')' {
+										$$.value=$3.value*$4.value;
+										
+										$$.funList.clear();
+										$$.funList.push_back(e(0, "*", 1));
+										$$.funList=mergeList($$.funList, $3.funList);
+										$$.funList=mergeList($$.funList, $4.funList);
+										cout<<"yacc finish MULTIPLY len: "<<$$.funList.size()<<"\n";
+										}
          ;
 DIVIDE : '(' '/' EXP EXP ')'       {$$.value=$3.value/$4.value;cout<<"yacc finish DIVIDE\n";}
        ;
@@ -197,10 +223,27 @@ DEFSTMT : '(' define VARIABLE EXP ')' { /*還沒考慮function的define要怎麼
 VARIABLE : id {$$.Name=$1.Name;}
          ;
 /*7. Function*/
-FUNEXP : '(' lambda FUNIDs FUNBODY ')'  {$$.Datatype=3;cout<<"yacc finish FUN-EXP\n";}
+FUNEXP : '(' lambda FUNIDs FUNBODY ')'  {
+											$$.functionParams.clear();
+											for(std::map<string, int>::iterator it=$3.functionParams.begin()
+												;it!=$3.functionParams.end();it++){
+													$$.functionParams[it->first]=it->second;
+												};
+												
+											$$.funList.clear();
+											$$.funList=mergeList($$.funList, $4.funList);	
+											
+											$$.Datatype=3;
+											for(std::list<e>::iterator it=$$.funList.begin();it!=$$.funList.end();it++){cout<<(*it).value<<" ";};
+											cout<<endl;
+											for(std::list<e>::iterator it=$$.funList.begin();it!=$$.funList.end();it++){cout<<(*it).name<<" ";};
+											cout<<endl;
+											cout<<"yacc finish FUN-EXP, len: "<<$$.funList.size()<<"\n";
+										}
        ;
-moreIDs: id								{$$.functionParams[$1.Name]=0;}
+moreIDs: id								{$$.functionParams.clear();$$.functionParams[$1.Name]=0;}
        | id  moreIDs 					{
+											$$.functionParams.clear();
 											$$.functionParams[$1.Name]=0;
 											for(std::map<string, int>::iterator it=$2.functionParams.begin()
 												;it!=$2.functionParams.end();it++){
@@ -211,21 +254,38 @@ moreIDs: id								{$$.functionParams[$1.Name]=0;}
 FUNIDs : '(' moreIDs ')'                 {$$.functionParams=$2.functionParams;cout<<"yacc finish FUN-IDs\n";}
        | '(' ')'
        ;
-FUNBODY : EXP                           {mergeList($$.funList, $1.funList);cout<<"yacc finish FUN-BODY\n";}
+FUNBODY : EXP                           {$$.funList.clear();$$.funList=mergeList($$.funList, $1.funList);cout<<"yacc finish FUN-BODY\n";}
         ;
-morePRAM : PARAM						{mergeListInt($$.funParamPassIn, $1.funParamPassIn);}
+morePRAM : PARAM						{$$.funParamPassIn.clear();mergeListInt($$.funParamPassIn, $1.funParamPassIn);}
          | PARAM morePRAM				{
+											$$.funParamPassIn.clear();
 											mergeListInt($$.funParamPassIn, $1.funParamPassIn);
 											mergeListInt($$.funParamPassIn, $2.funParamPassIn);
 										}
 		 ;
 		 /*這裡就要把function的值算出來了*/
-FUNCALL : '(' FUNEXP morePRAM ')'      {cout<<"yacc finish FUN-CALL\n";}
-        | '(' FUNEXP ')'               {cout<<"yacc finish FUN-CALL\n";}
+FUNCALL : '(' FUNEXP morePRAM ')'      {
+										/*參數傳入*/
+										paramMerge($2.functionParams, $3.funParamPassIn);
+										/*參數帶入，實際計算*/
+										$$.value=calTheExp($2.funList, $2.functionParams);
+										cout<<"FunList len: "<<$2.funList.size()<<"\n";
+										cout<<"FunParams len: "<<$2.functionParams.size()<<"\n";
+										for(std::map<std::string, int>::iterator it=$2.functionParams.begin();it!=$2.functionParams.end();it++){cout<<it->first<<" ";};
+										cout<<endl;
+										for(std::map<std::string, int>::iterator it=$2.functionParams.begin();it!=$2.functionParams.end();it++){cout<<it->second<<" ";};
+										cout<<endl;
+										cout<<"yacc finish FUN-CALL\n";
+										}
+        | '(' FUNEXP ')'               {
+										/*參數帶入，實際計算*/
+										$$.value=calTheExp($2.funList, $2.functionParams);
+										cout<<"yacc finish FUN-CALL\n";
+										}
         | '(' FUNNAME morePRAM ')'     {cout<<"yacc finish FUN-CALL\n";}
 		| '(' FUNNAME ')'              {cout<<"yacc finish FUN-CALL\n";}
         ;
-PARAM : EXP                             {$$.funParamPassIn.push_back($1.value);cout<<"yacc finish PARAM\n";}
+PARAM : EXP                             {$$.funParamPassIn.clear();$$.funParamPassIn.push_back($1.value);cout<<"yacc finish PARAM, value: "<<$1.value<<"\n";}
       ;
 LASTEXP : EXP                           {cout<<"yacc finish LASTEXP\n";}
          ;
@@ -255,12 +315,18 @@ int main(int argc, char *argv[]) {
         return(0);
 }
 
-void mergeList(std::list<e>& list01, std::list<e>& list02)
+std::list<e> mergeList(std::list<e> list01, std::list<e> list02)
 		{
+			std::list<e> output;
+			for(std::list<e>::iterator it=list01.begin();it!=list01.end();it++)
+			{
+				output.push_back(*it);
+			}
 			for(std::list<e>::iterator it=list02.begin();it!=list02.end();it++)
 			{
-				list01.push_back(*it);
+				output.push_back(*it);
 			}
+			return output;
 		}
 		
 
@@ -271,6 +337,145 @@ void mergeListInt(std::list<int>& list01, std::list<int>& list02)
 				list01.push_back(*it);
 			}
 		}
+
+/*將call function傳入的參數, 依序放入function expression的參數dictionary裡面*/
+void paramMerge(std::map<string, int>& a, std::list<int>& b)
+{
+	std::list<int>::iterator it=b.begin();
+	std::map<string, int>::iterator it2=a.begin();
+	while(it!=b.end() && it2!=a.end())
+	{
+		it2->second=*it;
+		
+		it++;
+		it2++;
+	}
+}
+
+/*把function的式子實際做運算，包含把參數帶進去*/
+int calTheExp(std::list<e>& funlist, std::map<std::string, int>& functionparams)
+{
+	int ans=0;
+	std::stack<e> expStack;
+	/*先將function的exp放入stack裡面*/
+	for(std::list<e>::iterator it=funlist.begin();it!=funlist.end();it++){
+		expStack.push(*it);
+		std::cout<<"IT: "<<(*it).value<<" "<<(*it).name<<"\n";
+	}
+	
+	std::stack<int> tempStack;
+	while(expStack.size()>0)
+	{
+		e tempElement=expStack.top();
+		expStack.pop();
+		
+		/*是加減乘除*/
+		if(tempElement.type==1)
+		{
+			if(tempElement.name=="+")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				int b=tempStack.top();
+				tempStack.pop();
+				a=a+b;
+				tempStack.push(a);
+			}
+			else if(tempElement.name=="-")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				int b=tempStack.top();
+				tempStack.pop();
+				a=a-b;
+				tempStack.push(a);
+			}
+			else if(tempElement.name=="*")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				int b=tempStack.top();
+				tempStack.pop();
+				a=a*b;
+				tempStack.push(a);
+			}
+			else if(tempElement.name=="/")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				int b=tempStack.top();
+				tempStack.pop();
+				a=a/b;
+				tempStack.push(a);
+			}
+			else if(tempElement.name=="mod")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				int b=tempStack.top();
+				tempStack.pop();
+				a=a%b;
+				tempStack.push(a);
+			}
+			else if(tempElement.name=="<")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				int b=tempStack.top();
+				tempStack.pop();
+				if(a<b)
+					a=1;
+				else
+					a=0;
+				tempStack.push(a);
+			}
+			else if(tempElement.name==">")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				int b=tempStack.top();
+				tempStack.pop();
+				if(a>b)
+					a=1;
+				else
+					a=0;
+				tempStack.push(a);
+			}
+			else if(tempElement.name=="=")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				int b=tempStack.top();
+				tempStack.pop();
+				if(a==b)
+					a=1;
+				else
+					a=0;
+				tempStack.push(a);
+			}
+		}
+		/*是數字*/
+		else if(tempElement.type==2)
+		{
+			tempStack.push(tempElement.value);
+		}
+		/*是參數, 就要從傳進來的參數表找了*/
+		else if(tempElement.type==3)
+		{
+			int paramVal=0;
+			for(std::map<std::string, int>::iterator it=functionparams.begin()
+				;it!=functionparams.end();it++)
+			{
+				if((it->first)==tempElement.name){
+					paramVal=it->second;
+				}
+			}
+			tempStack.push(paramVal);
+		}
+	}
+	ans=tempStack.top();
+	return ans;
+}
 
 void checkMatrixMul(int a1, int a2, int a3, int a4, int columnNum)
 {

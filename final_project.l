@@ -61,7 +61,7 @@ int column=0;
 
 [a-z]([a-z]|[0-9]|'-')* {
 	column=column+yyleng;
-	printf("Lex ID\n");
+	printf("Lex ID: %s\n", yytext);
 	yylval.var.Name=yytext;
 	return id;
 }
