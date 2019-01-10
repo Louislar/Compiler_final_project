@@ -3,7 +3,8 @@
 
 compler的期末project, 實作minilisp的interpreter(smli)
 
-## 
+## 完成進度
+只做完 basic features 1~8
 
 ## make file 用法
 ./compile_make xx.l xx.y yy
