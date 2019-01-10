@@ -8,7 +8,7 @@ compler的期末project, 實作minilisp的interpreter
 
 
 |   Feature   | Description |   Points   |
-|:--------:|:------:|:-----------:|
+|:--------|:------|:-----------|
 |  1. Syntax                  |   Validation Print “syntax error” when parsing invalid syntax   |  10  |
 |  2. Print                   |   Implement print-num statement                                 |  10  |
 |  3. Numerical               |   Operations Implement all numerical operations                 |  25  |
