@@ -3,11 +3,24 @@
 
 compler的期末project, 實作minilisp的interpreter
 
+
 專案位置: 
 
 https://github.com/Louislar/Compiler_final_project
 
 測資位於test_data的資料夾裡面
+
+## 主要檔案
+
+### 有印log
+final_project.l
+final_project.y
+final_project
+
+### 沒有印log
+final_project_noprint.l
+final_project_noprint.y
+final_project_noprint
 
 ## 編譯環境 
 lex & yacc \n
