@@ -273,7 +273,7 @@ AND-OP : '(' andop EXP moreEXPAnd ')'   {
 											//cout<<"yacc finish AND\n";
 										}     
        ;
-moreEXPOr : EXP 						{$$.value=$1.value;$$.funList.clear();$$.funList=mergeList($$.funList, $1.funList);cout<<"moreEXPOr len: "<<$$.funList.size()<<"\n";}
+moreEXPOr : EXP 						{$$.value=$1.value;$$.funList.clear();$$.funList=mergeList($$.funList, $1.funList);/*cout<<"moreEXPOr len: "<<$$.funList.size()<<"\n";*/}
 			| EXP moreEXPOr 			{
 											if($1.value==1||$2.value==1){$$.value=1;}
 											else{$$.value=0;};
