@@ -110,6 +110,7 @@ EXP : boolval {$$.funList.push_back(e($1.value, "", 2));}
 								cout<<"Cant find "<<$1.Name<<"\n";
 								};
 							/*加入function的parameter*/
+							$$.funList.clear();
 							$$.funList.push_back(e(0, $1.Name, 3));
 						}
 	| NUM-OP | LOGICAL-OP
@@ -247,28 +248,48 @@ EQUAL : '(' '=' EXP moreEXPEqual ')'    {
 /*5. Logical operation*/
 LOGICAL-OP : AND-OP | OR-OP | NOT-OP
            ;
-moreEXPAnd : EXP 						{$$.value=$1.value;}
+moreEXPAnd : EXP 						{$$.value=$1.value;$$.funList.clear();$$.funList=mergeList($$.funList, $1.funList);cout<<"moreEXPAnd len: "<<$$.funList.size()<<"\n";}
 			| EXP moreEXPAnd 			{
 											if($1.value==1&&$2.value==1){$$.value=1;}
 											else{$$.value=0;};
+											
+											$$.funList.clear();
+											$$.funList.push_back(e(0, "and", 1));
+											$$.funList=mergeList($$.funList, $1.funList);
+											$$.funList=mergeList($$.funList, $2.funList);
 										}
 			;
 AND-OP : '(' andop EXP moreEXPAnd ')'   {
 											if($3.value==1&&$4.value==1){$$.value=1;}
 											else{$$.value=0;};
 											$$.Datatype=1;
+											
+											$$.funList.clear();
+											$$.funList.push_back(e(0, "and", 1));
+											$$.funList=mergeList($$.funList, $3.funList);
+											$$.funList=mergeList($$.funList, $4.funList);
 											cout<<"yacc finish AND\n";
 										}     
        ;
-moreEXPOr : EXP 						{$$.value=$1.value;}
+moreEXPOr : EXP 						{$$.value=$1.value;$$.funList.clear();$$.funList=mergeList($$.funList, $1.funList);cout<<"moreEXPOr len: "<<$$.funList.size()<<"\n";}
 			| EXP moreEXPOr 			{
 											if($1.value==1||$2.value==1){$$.value=1;}
 											else{$$.value=0;};
+											
+											$$.funList.clear();
+											$$.funList.push_back(e(0, "or", 1));
+											$$.funList=mergeList($$.funList, $1.funList);
+											$$.funList=mergeList($$.funList, $2.funList);
 										}
 			;
 OR-OP : '(' orop EXP moreEXPOr ')'      {
 											if($3.value==1||$4.value==1){$$.value=1;}
 											else{$$.value=0;};
+											
+											$$.funList.clear();
+											$$.funList.push_back(e(0, "or", 1));
+											$$.funList=mergeList($$.funList, $3.funList);
+											$$.funList=mergeList($$.funList, $4.funList);
 											$$.Datatype=1;cout<<"yacc finish OR\n";
 										}
       ;
@@ -276,6 +297,10 @@ NOT-OP : '(' notop EXP ')'            	{
 											if($3.value==1){$$.value=0;}
 											else if($3.value==0){$$.value=1;};
 											$$.Datatype=1;
+											
+											$$.funList.clear();
+											$$.funList.push_back(e(0, "not", 1));
+											$$.funList=mergeList($$.funList, $3.funList);
 											cout<<"yacc finish NOT\n";
 										}
        ;
@@ -387,15 +412,44 @@ LASTEXP : EXP                           {cout<<"yacc finish LASTEXP\n";}
 FUNNAME : id                            {$$.Name=$1.Name;cout<<"yacc finish FUN-NAME\n";}
          ;
 /*8. if Expression*/
-IFEXP : '(' ifop TESTEXP THENEXP ELSEEXP ')' {if($3.value==1){$$.value=$4.value;} /*條件是true*/
+IFEXP : '(' ifop TESTEXP THENEXP ELSEEXP ')' {
+												if($3.value==1){$$.value=$4.value;} /*條件是true*/
 												else if($3.value==0){$$.value=$5.value;};
-												cout<<"yacc finish IF-EXP\n";}
+												
+												$$.funList.clear();
+												$$.funList.push_back(e(0, "if", 1));
+												$$.funList=mergeList($$.funList, $3.funList);
+												$$.funList=mergeList($$.funList, $4.funList);
+												$$.funList=mergeList($$.funList, $5.funList);
+												cout<<"yacc finish IF-EXP\n";
+											 }
        ;
-TESTEXP : EXP                                {$$.value=$1.value;$$.Datatype=$1.Datatype;cout<<"yacc finish TEST-EXP\n";}
+TESTEXP : EXP                               {
+												$$.value=$1.value;
+												$$.Datatype=$1.Datatype;
+												
+												$$.funList.clear();
+												$$.funList=mergeList($$.funList, $1.funList);
+												cout<<"yacc finish TEST-EXP\n";
+											}
         ;
-THENEXP : EXP                                {$$.value=$1.value;$$.Datatype=$1.Datatype;cout<<"yacc finish THEN-EXP\n";} 
+THENEXP : EXP                               {
+												$$.value=$1.value;
+												$$.Datatype=$1.Datatype;
+												
+												$$.funList.clear();
+												$$.funList=mergeList($$.funList, $1.funList);
+												cout<<"yacc finish THEN-EXP\n";
+											} 
         ;
-ELSEEXP : EXP                                {$$.value=$1.value;$$.Datatype=$1.Datatype;cout<<"yacc finish ELSE-EXP\n";}
+ELSEEXP : EXP                               {
+												$$.value=$1.value;
+												$$.Datatype=$1.Datatype;
+												
+												$$.funList.clear();
+												$$.funList=mergeList($$.funList, $1.funList);
+												cout<<"yacc finish ELSE-EXP\n";
+											}
         ;
 
 %%
@@ -559,6 +613,70 @@ int calTheExp(std::list<e>& funlist, std::map<std::string, int>& functionparams)
 				tempStack.push(isAllEqual);
 				
 			}
+			else if(tempElement.name=="if")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				int b=tempStack.top();
+				tempStack.pop();
+				int c=tempStack.top();
+				tempStack.pop();
+				
+				if(a==1)
+				{
+					tempStack.push(b);
+				}
+				else if(a==0)
+				{
+					tempStack.push(c);
+				}
+			}
+			else if(tempElement.name=="and")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				int b=tempStack.top();
+				tempStack.pop();
+				
+				if(a==1 && b==1)
+				{
+					tempStack.push(1);
+				}
+				else
+				{
+					tempStack.push(0);
+				}
+			}
+			else if(tempElement.name=="or")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				int b=tempStack.top();
+				tempStack.pop();
+				
+				if(a==1 || b==1)
+				{
+					tempStack.push(1);
+				}
+				else
+				{
+					tempStack.push(0);
+				}
+			}
+			else if(tempElement.name=="not")
+			{
+				int a=tempStack.top();
+				tempStack.pop();
+				
+				if(a==0)
+				{
+					tempStack.push(1);
+				}
+				else
+				{
+					tempStack.push(0);
+				}
+			}
 		}
 		/*是數字*/
 		else if(tempElement.type==2)
@@ -569,15 +687,37 @@ int calTheExp(std::list<e>& funlist, std::map<std::string, int>& functionparams)
 		else if(tempElement.type==3)
 		{
 			int paramVal=0;
+			int isFind=0;
 			for(std::map<std::string, int>::iterator it=functionparams.begin()
 				;it!=functionparams.end();it++)
 			{
 				if((it->first)==tempElement.name){
 					paramVal=it->second;
-					
+					isFind=1;
+					break;
 				}
 			}
 			
+			/*沒有從傳進來的參數裡面找到*/
+			if(isFind==0)
+			{
+				/*到global variable裡面找*/
+				for(std::map<std::string, variable>::iterator it=globalVar.begin()
+					;it!=globalVar.end();it++)
+				{
+					if((it->first)==tempElement.name){
+						if((it->second).Datatype!=3){
+							paramVal=(it->second).value;
+							isFind=1;
+							break;
+						}
+						else if((it->second).Datatype==3)/**/
+						{
+							
+						}
+					}
+				}
+			}
 			
 			tempStack.push(paramVal);
 		}
