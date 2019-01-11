@@ -406,7 +406,25 @@ FUNCALL : '(' FUNEXP morePRAM ')'      {
 										
 										//cout<<"yacc finish FUN-CALL\n";
 										}
-		| '(' FUNNAME ')'              {/*cout<<"yacc finish FUN-CALL\n";*/}
+		| '(' FUNNAME ')'              {
+											/*從變數清單找到function*/
+											std::map<std::string, variable>::iterator it;
+											it=globalVar.find($2.Name);
+											if(it!=globalVar.end()) {
+												//cout<<"FunList len: "<<(it->second).funList.size()<<"\n";
+												//cout<<"FunParams len: "<<(it->second).functionParams.size()<<"\n";
+												//for(std::map<std::string, int>::iterator it1=(it->second).functionParams.begin();it1!=(it->second).functionParams.end();it1++){cout<<it1->first<<" ";};
+												//cout<<endl;
+												//for(std::map<std::string, int>::iterator it1=(it->second).functionParams.begin();it1!=(it->second).functionParams.end();it1++){cout<<it1->second<<" ";};
+												//cout<<endl;
+												$$.value=calTheExp((it->second).funList, (it->second).functionParams);
+											}
+											else{
+												$$.value=0;
+											//cout<<"Cant find the function"<<endl;
+											}
+											/*cout<<"yacc finish FUN-CALL\n";*/
+										}
         ;
 PARAM : EXP                             {$$.funParamPassIn.clear();$$.funParamPassIn.push_back($1.value);/*cout<<"yacc finish PARAM, value: "<<$1.value<<"\n";*/}
       ;
