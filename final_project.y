@@ -95,9 +95,10 @@ PRINT-STMT : '(' printnum EXP ')'     {cout<<$3.value<<"\n";}
 									  }
            ;
 /*3. Exprssion*/
-EXP : boolval | number {
-						$$.funList.push_back(e($1.value, "", 2));
-						cout<<"yacc number\n";
+EXP : boolval {$$.funList.push_back(e($1.value, "", 2));} 
+	| number 			{
+							$$.funList.push_back(e($1.value, "", 2));
+							cout<<"yacc number\n";
 						} 
 	| VARIABLE 			{/*從global variable搜尋*/
 							std::map<std::string, variable>::iterator it;
@@ -211,17 +212,22 @@ SMALLER : '(' '<' EXP EXP ')'      {if($3.value<$4.value){$$.Datatype=1;$$.value
 									cout<<"yacc finish SMALLER\n";}
         ;
 /*要很多個東西都等於才會回傳true*/
-moreEXPEqual : EXP {$$.value=$1.value;$$.isEqual=1;$$.funList.clear();$$.funList=mergeList($$.funList, $1.funList);cout<<"moreEXPEqual len: "<<$$.funList.size()<<"\n";}
-			| EXP moreEXPEqual {
-								if($1.value!=$2.value){$$.isEqual=0;};
-								$$.value=$1.value;
-								
-								$$.funList.clear();
-								$$.funList.push_back(e(0, "=", 1));
-								$$.funList=mergeList($$.funList, $1.funList);
-								$$.funList=mergeList($$.funList, $2.funList);
-								cout<<"EQUAL has more than two parameter\n";
-								}
+moreEXPEqual : EXP 						{
+											$$.value=$1.value;$$.isEqual=1;
+											$$.funList.clear();
+											$$.funList=mergeList($$.funList, $1.funList);
+											cout<<"moreEXPEqual len: "<<$$.funList.size()<<"\n";
+										}
+			| EXP moreEXPEqual 			{
+											if($1.value!=$2.value){$$.isEqual=0;};
+											$$.value=$1.value;
+											
+											$$.funList.clear();
+											//$$.funList.push_back(e(0, "=", 1));
+											$$.funList=mergeList($$.funList, $1.funList);
+											$$.funList=mergeList($$.funList, $2.funList);
+											cout<<"EQUAL has more than two parameter\n";
+										}
 			;
 EQUAL : '(' '=' EXP moreEXPEqual ')'    {
 											if($3.value==$4.value){$$.value=$3.value;$$.isEqual=1;}
@@ -231,50 +237,61 @@ EQUAL : '(' '=' EXP moreEXPEqual ')'    {
 											
 											$$.funList.clear();
 											$$.funList.push_back(e(0, "=", 1));
+											$$.funList.push_back(e($3.funList.size()+$4.funList.size(), "", 2));/*"="後面的參數個數*/
 											$$.funList=mergeList($$.funList, $3.funList);
 											$$.funList=mergeList($$.funList, $4.funList);
-											cout<<"yacc finish EQUAL\n";
+											cout<<"yacc finish EQUAL params len: "<<$3.funList.size()+$4.funList.size()<<"\n";
 										}
       ;
 	  
 /*5. Logical operation*/
 LOGICAL-OP : AND-OP | OR-OP | NOT-OP
            ;
-moreEXPAnd : EXP {$$.value=$1.value;}
-			| EXP moreEXPAnd {if($1.value==1&&$2.value==1){$$.value=1;}
-								else{$$.value=0;};}
+moreEXPAnd : EXP 						{$$.value=$1.value;}
+			| EXP moreEXPAnd 			{
+											if($1.value==1&&$2.value==1){$$.value=1;}
+											else{$$.value=0;};
+										}
 			;
-AND-OP : '(' andop EXP moreEXPAnd ')'    {if($3.value==1&&$4.value==1){$$.value=1;}
+AND-OP : '(' andop EXP moreEXPAnd ')'   {
+											if($3.value==1&&$4.value==1){$$.value=1;}
 											else{$$.value=0;};
 											$$.Datatype=1;
-											cout<<"yacc finish AND\n";}     
+											cout<<"yacc finish AND\n";
+										}     
        ;
-moreEXPOr : EXP {$$.value=$1.value;}
-			| EXP moreEXPOr {if($1.value==1||$2.value==1){$$.value=1;}
-								else{$$.value=0;};}
-			;
-OR-OP : '(' orop EXP moreEXPOr ')'      {if($3.value==1||$4.value==1){$$.value=1;}
+moreEXPOr : EXP 						{$$.value=$1.value;}
+			| EXP moreEXPOr 			{
+											if($1.value==1||$2.value==1){$$.value=1;}
 											else{$$.value=0;};
-											$$.Datatype=1;cout<<"yacc finish OR\n";}
+										}
+			;
+OR-OP : '(' orop EXP moreEXPOr ')'      {
+											if($3.value==1||$4.value==1){$$.value=1;}
+											else{$$.value=0;};
+											$$.Datatype=1;cout<<"yacc finish OR\n";
+										}
       ;
-NOT-OP : '(' notop EXP ')'            {if($3.value==1){$$.value=0;}
-										else if($3.value==0){$$.value=1;};
-										$$.Datatype=1;
-										cout<<"yacc finish NOT\n";}
+NOT-OP : '(' notop EXP ')'            	{
+											if($3.value==1){$$.value=0;}
+											else if($3.value==0){$$.value=1;};
+											$$.Datatype=1;
+											cout<<"yacc finish NOT\n";
+										}
        ;
 /*6. define Statment*/
-DEFSTMT : '(' define VARIABLE EXP ')' { 
-										$$.Datatype=4;
-										$$.Name=$3.Name;
-										$$.value=$4.value;
+DEFSTMT : '(' define VARIABLE EXP ')' 	{ 
+											$$.Datatype=4;
+											$$.Name=$3.Name;
+											$$.value=$4.value;
 										
-										/*傳入的是function變數*/
-										$$.funList=$4.funList;
-										$$.functionParams=$4.functionParams;
-										if($4.Datatype==3){$$.Datatype=3;};
-										/*加到全域變數清單*/
-										globalVar[$$.Name]=$$;
-										cout<<"yacc finish defined stmt\n";
+											/*傳入的是function變數*/
+											$$.funList=$4.funList;
+											$$.functionParams=$4.functionParams;
+											if($4.Datatype==3){$$.Datatype=3;};
+											/*加到全域變數清單*/
+											globalVar[$$.Name]=$$;
+											cout<<"yacc finish defined stmt\n";
 										}
          ;/*用map<string, int>存所有變數的值*/
 VARIABLE : id {$$.Name=$1.Name;}
@@ -521,15 +538,26 @@ int calTheExp(std::list<e>& funlist, std::map<std::string, int>& functionparams)
 			}
 			else if(tempElement.name=="=")	/*"="的部分還要修正, function內部*/
 			{
-				int a=tempStack.top();
+				int paramsNum=tempStack.top();
 				tempStack.pop();
-				int b=tempStack.top();
-				tempStack.pop();
-				if(a==b)
-					a=1;
-				else
-					a=0;
-				tempStack.push(a);
+				int paramsArray[100];
+				for(int i=0;i<paramsNum;i++)
+				{
+					paramsArray[i]=tempStack.top();
+					tempStack.pop();
+				}
+				int isAllEqual=1;
+				int tempNum=paramsArray[0];
+				for(int i=1;i<paramsNum;i++)
+				{
+					if(paramsArray[i]!=tempNum){
+						isAllEqual=0;
+						break;
+					}
+				}
+				
+				tempStack.push(isAllEqual);
+				
 			}
 		}
 		/*是數字*/
