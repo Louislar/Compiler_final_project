@@ -412,7 +412,7 @@ PARAM : EXP                             {$$.funParamPassIn.clear();$$.funParamPa
       ;
 LASTEXP : EXP                           {/*cout<<"yacc finish LASTEXP\n"*/}
          ;
-FUNNAME : id                            {$$.Name=$1.Name;cout<<"yacc finish FUN-NAME\n";}
+FUNNAME : id                            {$$.Name=$1.Name;/*cout<<"yacc finish FUN-NAME\n";*/}
          ;
 /*8. if Expression*/
 IFEXP : '(' ifop TESTEXP THENEXP ELSEEXP ')' {
